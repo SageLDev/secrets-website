@@ -7,7 +7,8 @@ const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require("passport-google-oauth2").Strategy;
-const findOrCreate = require("mongoose-findorcreate")
+const findOrCreate = require("mongoose-findorcreate");
+const e = require("express");
 
 
 const app = express();
@@ -32,11 +33,11 @@ const userSchema = new mongoose.Schema({
     email: String,
     password: String,
     googleId: String,
+    secrets: Array,
 });
 
 userSchema.plugin(passportLocalMongoose);
 userSchema.plugin(findOrCreate);
-
 
 const User = new mongoose.model("User", userSchema);
 
@@ -64,6 +65,7 @@ passport.use(new GoogleStrategy({
     });
   }
 ));
+
 
 app.get("/", function(req, res){
     res.render("home");
@@ -96,7 +98,32 @@ app.get("/secrets", function(req, res){
     );
 
     if(req.isAuthenticated()){
-        res.render("secrets");
+        User.find({"secret": {$ne: null}}, function(err, foundUsers){
+            if(err){
+                console.log(err);
+            } else {
+                if(foundUsers){
+                    res.render("secrets", 
+                    {usersWithSecrets: foundUsers});
+                } else {
+                    console.log("Couldn't find users with secrets");
+                }
+            }
+        });
+ 
+    } else {
+        res.redirect("/login");
+    }
+});
+
+app.get("/submit", function(req, res){
+    res.set(
+        'Cache-Control', 
+        'no-cache, private, no-store, must-revalidate, max-stal e=0, post-check=0, pre-check=0'
+    );
+
+    if(req.isAuthenticated()){
+        res.render("submit");
     } else {
         res.redirect("/login");
     }
@@ -108,6 +135,30 @@ app.get("/logout", function(req, res){
             console.log(err);
         } else {
             res.redirect("/");
+        }
+    });
+});
+
+app.post("/submit", function(req, res){
+    const submittedSecret = req.body.secret;
+
+    User.findById(req.user.id, function(err, foundUser){
+        if(err){
+            console.log(err);
+        } else {
+            if(foundUser){
+                foundUser.secrets.push(submittedSecret);
+                foundUser.save(function(err){
+                    if(!err){
+                        res.redirect("/secrets")
+                    } else {
+                        console.log(err);
+                    }
+                   
+                })
+            } else {
+                console.log("Couldn't find user by ID");
+            }
         }
     });
 });
