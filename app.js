@@ -8,7 +8,6 @@ const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require("passport-google-oauth2").Strategy;
 const findOrCreate = require("mongoose-findorcreate");
-const e = require("express");
 
 
 const app = express();
@@ -27,7 +26,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 
-mongoose.connect("mongodb://localhost:27017/userDB");
+mongoose.connect(process.env.DBCONNECT);
 
 const userSchema = new mongoose.Schema({
     email: String,
@@ -56,7 +55,7 @@ passport.deserializeUser(function(id, done) {
 passport.use(new GoogleStrategy({
     clientID:     process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/auth/google/secrets",
+    callbackURL: process.env.CALLBACK_URL,
     passReqToCallback   : true
   },
   function(request, accessToken, refreshToken, profile, done) {
@@ -197,6 +196,6 @@ app.post("/login", passport.authenticate("local", { failureRedirect: '/login', f
 
 
 
-app.listen(3000, function(){
-    console.log("Server started");
-});
+app.listen(process.env.PORT || 3000, function() {
+    console.log("Server started successfully");
+  });

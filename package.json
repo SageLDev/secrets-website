@@ -8,6 +8,8 @@
   },
   "author": "SageL",
   "license": "ISC",
+  "engines": {
+    "node": "16.13.0"},
   "dependencies": {
     "bcrypt": "^5.0.1",
     "dotenv": "^16.0.1",
